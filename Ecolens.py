@@ -23,20 +23,20 @@ st.sidebar.markdown('</a> Developed by Team BroCode <a style="text-align: center
 if "datasets" not in st.session_state:
     datasets = {}
     # Preload datasets
-    datasets["Movies"] = pd.read_csv("movies.csv")
-    datasets["Housing"] =pd.read_csv("housing.csv")
-    datasets["Cars"] =pd.read_csv("cars.csv")
-    datasets["Colleges"] =pd.read_csv("colleges.csv")
-    datasets["Customers & Products"] =pd.read_csv("customers_and_products_contacts.csv")
-    datasets["Department Store"] =pd.read_csv("department_store.csv")
-    datasets["Energy Production"] =pd.read_csv("energy_production.csv")
+    datasets["CO2 Emissions"] = pd.read_csv("data/co2.csv")
+    datasets["Health Workforce"] =pd.read_excel("data/health_workforce.xlsx")
+    # datasets["Malnutrition"] =pd.read_excel("data/malnutrition.xls")
+    datasets["Occupational Health"] =pd.read_excel("data/occupational_health.xls")
+    # datasets["ONS"] =pd.read_excel("data/ons.xlsx")
+    datasets["Population"] =pd.read_excel("data/population.xlsx")
+    datasets["Rainfall"] =pd.read_excel("data/rainfall.xlsx")
+    datasets["Temperature"] =pd.read_excel("data/temperature.xls")
     st.session_state["datasets"] = datasets
 else:
     # use the list already loaded
     datasets = st.session_state["datasets"]
 
 groq_key=os.getenv('groq_key')
-print('groq_key is  ', groq_key)
 
 with st.sidebar:
     # First we want to choose the dataset, but we will fill it with choices once we've loaded one
