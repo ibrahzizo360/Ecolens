@@ -9,7 +9,6 @@ from dotenv import load_dotenv
 
 load_dotenv()  
 warnings.filterwarnings("ignore")
-st.set_option('deprecation.showPyplotGlobalUse', False)
 st.set_page_config(page_icon="old-logo.png",layout="wide",page_title="Ecolens")
 
 

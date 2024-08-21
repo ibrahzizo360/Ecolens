@@ -1,7 +1,7 @@
 pandas==1.4.2
 numpy
 matplotlib==3.5.1
-streamlit==1.24.0
+streamlit==1.37.1
 openai==0.27.0
 langchain==0.0.141
 huggingface-hub==0.11.0
@@ -9,4 +9,4 @@ groq==0.9.0
 xlrd==2.0.1
 python-dotenv
 openpyxl
-
+streamlit-extras
