@@ -1,9 +1,13 @@
 import pandas as pd
 import openai
+import os
 import streamlit as st
 #import streamlit_nested_layout
 from classes import get_primer,format_question,run_request,run_explanation_request
 import warnings
+from dotenv import load_dotenv
+
+load_dotenv()  
 warnings.filterwarnings("ignore")
 st.set_option('deprecation.showPyplotGlobalUse', False)
 st.set_page_config(page_icon="old-logo.png",layout="wide",page_title="Ecolens")
@@ -31,9 +35,8 @@ else:
     # use the list already loaded
     datasets = st.session_state["datasets"]
 
-openai_key = "sk-DKqufVPx_Kg0R_9SwEJZpEBqd-TzCsFyInAx6_05O0T3BlbkFJ54GOYh_Znxcl-5PER70HBKKMqOlzQszO0eHQl-R_oA"
-hf_key ="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"
-groq_key="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"
+groq_key=os.getenv('groq_key')
+print('groq_key is  ', groq_key)
 
 with st.sidebar:
     # First we want to choose the dataset, but we will fill it with choices once we've loaded one
