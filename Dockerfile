@@ -1,8 +1,20 @@
-# Use the Python base image
 FROM python:3.11-bullseye
 
-# Install zlib and other dependencies
-RUN apt-get update && apt-get install -y zlib1g-dev
+# Install zlib and other dependencies required for Pillow
+RUN apt-get update && apt-get install -y \
+    zlib1g-dev \
+    libjpeg-dev \
+    libfreetype6-dev \
+    liblcms2-dev \
+    libopenjp2-7-dev \
+    libtiff-dev \
+    libwebp-dev \
+    tcl8.6-dev \
+    tk8.6-dev \
+    python3-tk \
+    libharfbuzz-dev \
+    libfribidi-dev \
+    libxcb1-dev
 
 # Set up the working directory
 WORKDIR /app
