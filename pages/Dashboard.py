@@ -1,6 +1,5 @@
 import pandas as pd
 import streamlit as st
-import pandas as pd
 import matplotlib.pyplot as plt
 import plotly.express as px
 import plotly.graph_objects as go
@@ -11,17 +10,14 @@ st.set_page_config(
     initial_sidebar_state="collapsed" 
 )
 
-cols = st.columns(2)
-metric_style = """
-<div style='background-color: #f5f5f5; border-radius: 10px; padding: 20px; text-align: center; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);'>
-    <h4 style='font-size: 1.25em; color: #4a4a4a;'>{label}</h4>
-    <p style='font-size: 2em; color: #0073e6; margin: 10px 0;'>{value}</p>
-</div>
-"""
-
+# Load data
 hw_data = pd.read_excel("data/health_workforce.xlsx", header=0)
+occu_health_data = pd.read_csv("data/occupational_health.csv")
 ons_data = pd.read_csv("data/ons_data.csv", header=0)
 hf_data = pd.read_csv("data/hf_card.csv", header=0)
+co2_data = pd.read_csv('data/co2emission.csv')
+rainfall_data = pd.read_csv('data/rainfall.csv')
+temperature_data = pd.read_csv('data/temperature.csv')
 
 # Replace any NA values with 0
 ons_data.fillna(0, inplace=True)
@@ -35,185 +31,272 @@ regions = [
 ]
 
 # Streamlit selectbox for region selection
-selected_region = st.selectbox("Select a region:", regions)
-
-# Filter the ons_data DataFrame for the selected region and aggregate the values
-filtered_ons_data = ons_data[ons_data["region"] == selected_region].agg({
-    'number_of_opd_malaria_cases': 'sum',
-    'diarrhoea_diseases_all_ages': 'sum'
-})
-
-# Filter the hw_data DataFrame for the selected region
-filtered_hw_data = hw_data[hw_data["Region"] == selected_region].agg({
-    'Grand Total': 'sum'
-})
-
-# Filter the hw_data DataFrame for the selected region
-filtered_hf_data = hf_data[hf_data["Regions"] == selected_region].agg({
-    'Count of Facility': 'sum'
-})
-
-# Display the metrics in columns
-col1, col2, col3, col4 = st.columns(4)
-
-with col1:
-    st.metric(label="OPD Malaria Cases", value=int(filtered_ons_data['number_of_opd_malaria_cases']))
-
-with col2:
-    st.metric(label="Diarrhoea Diseases", value=int(filtered_ons_data['diarrhoea_diseases_all_ages']))
-
-with col3:
-    st.metric(label="Total Health Workers", value=int(filtered_hw_data['Grand Total']))
-
-with col4:
-    st.metric(label="Total Health Facilities", value=int(filtered_hf_data['Count of Facility']))
 
 
-co2_data = pd.read_csv('data/co2emission.csv')
-rainfall_data = pd.read_csv('data/rainfall.csv')
-print(rainfall_data)
+# Tabs
+tab1, tab2 = st.tabs(["General Climate and Health Overview", "Effects of Climate Change on Occupational Health"])
 
-# rainfall_data.fillna(0, inplace=True)
+# Tab 1: Metrics Overview
+with tab1:
 
-# # Melt the DataFrame to make it suitable for Plotly
-# melted_data = rainfall_data.melt(id_vars=['Year', 'Month', 'Day'], var_name='City', value_name='Value')
+    selected_region = st.selectbox("Select a region:", regions)
 
-# # Create a new column combining Year and Month for better visualization
-# melted_data['Year-Month'] = pd.to_datetime(melted_data[['Year', 'Month', 'Day']])
+# Filter and aggregate data
+    filtered_ons_data = ons_data[ons_data["region"] == selected_region].agg({
+        'number_of_opd_malaria_cases': 'sum',
+        'diarrhoea_diseases_all_ages': 'sum'
+    })
+    filtered_hw_data = hw_data[hw_data["Region"] == selected_region].agg({
+        'Grand Total': 'sum'
+    })
+    filtered_hf_data = hf_data[hf_data["Regions"] == selected_region].agg({
+        'Count of Facility': 'sum'
+    })
 
-# # Create a line chart using Plotly
-# fig = px.line(
-#     melted_data, 
-#     x='Year-Month', 
-#     y='Value', 
-#     color='City',  # Differentiate lines by city
-#     title='Trend of Data Across All Cities Over Time',
-#     labels={
-#         "Year-Month": "Date",
-#         "Value": "Data Value"
-#     }
-# )
+# Display metrics
+    metrics = {
+        "OPD Malaria Cases": int(filtered_ons_data['number_of_opd_malaria_cases']),
+        "Diarrhoea Diseases": int(filtered_ons_data['diarrhoea_diseases_all_ages']),
+        "Total Health Workers": int(filtered_hw_data['Grand Total']),
+        "Total Health Facilities": int(filtered_hf_data['Count of Facility'])
+    }
 
-# # Enhance the plot with markers and a more detailed x-axis
-# fig.update_traces(mode="lines+markers", marker=dict(size=5))
-# fig.update_layout(
-#     xaxis_title='Date',
-#     yaxis_title='Data Value',
-#     template='plotly_white',
-#     xaxis_tickangle=-45,  # Rotate x-axis labels for better readability
-#     xaxis=dict(tickmode='linear')  # Ensure all months are displayed
-# )
-
-# # Show the plot in a Streamlit app
-# st.plotly_chart(fig)
-
-# Convert the 'Date' column to datetime format if it's not already
-rainfall_data['Date'] = pd.to_datetime(rainfall_data['Date'])
-
-# Filter data by regions using plotly's inbuilt feature
-line_fig = px.line(rainfall_data, x='Date', y='Rainfall', color='Region',
-                   title='Rainfall Volume Over Time by Region',
-                   labels={'Rainfall': 'Rainfall (mm)', 'Date': 'Date'},
-                   category_orders={"Region": sorted(rainfall_data['Region'].unique())})
-
-# Calculate the average rainfall across all regions for each date
-average_rainfall = rainfall_data.groupby('Date')['Rainfall'].mean().reset_index()
-
-# Add the average rainfall as an additional trace to the plot
-line_fig.add_scatter(x=average_rainfall['Date'], y=average_rainfall['Rainfall'],
-                     mode='lines', name='Average Rainfall', line=dict(color='black', dash='dash'))
-
-# Update the layout to include a region dropdown filter
-line_fig.update_layout(
-    updatemenus=[
-        {
-            "buttons": [
-                {
-                    "label": "All Regions",
-                    "method": "update",
-                    "args": [{"visible": [True] * (len(rainfall_data['Region'].unique()) + 1)}],
-                },
-            ] + [
-                {
-                    "label": region,
-                    "method": "update",
-                    "args": [{"visible": [r == region for r in rainfall_data['Region'].unique()] + [True]}],
-                }
-                for region in sorted(rainfall_data['Region'].unique())
-            ],
-            "direction": "down",
-            "showactive": True,
+# Define custom CSS for styling
+    st.markdown("""
+    <style>
+        .metric-card {
+            border-radius: 10px;
+            padding: 20px;
+            margin: 10px;
+            background-color: #f0f2f6;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
-    ]
-)
+        .metric-card .value {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .metric-card .label {
+            font-size: 16px;
+            color: #555;
+        }
+        .metric-card .icon {
+            font-size: 30px;
+            color: #007bff;
+            margin-right: 10px;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+    # Create four columns
+    col1, col2, col3, col4 = st.columns(4)
 
-st.plotly_chart(line_fig)
+    # Display metrics in styled cards
+    with col1:
+        st.markdown(f"""
+            <div class="metric-card">
+                <div class="icon">🩺</div>
+                <div class="label">OPD Malaria Cases</div>
+                <div class="value">{metrics["OPD Malaria Cases"]}</div>
+            </div>
+        """, unsafe_allow_html=True)
 
+    with col2:
+        st.markdown(f"""
+            <div class="metric-card">
+                <div class="icon">💧</div>
+                <div class="label">Diarrhoea Diseases</div>
+                <div class="value">{metrics["Diarrhoea Diseases"]}</div>
+            </div>
+        """, unsafe_allow_html=True)
 
+    with col3:
+        st.markdown(f"""
+            <div class="metric-card">
+                <div class="icon">👩‍⚕️</div>
+                <div class="label">Total Health Workers</div>
+                <div class="value">{metrics["Total Health Workers"]}</div>
+            </div>
+        """, unsafe_allow_html=True)
 
-
-temperature_data = pd.read_csv('data/temperature.csv')
-
-# Ensure 'Year' is treated as a datetime column
-temperature_data['Year'] = pd.to_datetime(temperature_data['Year'])
-
-# Extract the year from the 'Year' column
-temperature_data['Year'] = temperature_data['Year'].dt.year
-
-# Aggregate the data to get the average temperatures per year
-annual_avg_temperature = temperature_data.groupby('Year').agg({
-    'Tn': 'mean',
-    'Tx': 'mean'
-}).reset_index()
-
-# Create a Plotly figure
-temp_fig = go.Figure()
-
-# Add traces for min and max temperatures
-temp_fig.add_trace(go.Scatter(x=annual_avg_temperature['Year'], y=annual_avg_temperature['Tn'],
-                         mode='lines+markers',
-                         name='Average Min Temperature (Tn)',
-                         line=dict(color='royalblue', width=2),
-                         marker=dict(size=6)))
-
-temp_fig.add_trace(go.Scatter(x=annual_avg_temperature['Year'], y=annual_avg_temperature['Tx'],
-                         mode='lines+markers',
-                         name='Average Max Temperature (Tx)',
-                         line=dict(color='tomato', width=2, dash='dash'),
-                         marker=dict(size=6)))
-
-# Update layout to make it more attractive
-temp_fig.update_layout(
-    title='Average Temperature Over Time',
-    title_font_size=14,
-    title_font_color='black',
-    xaxis_title='Year',
-    yaxis_title='Temperature (°C)',
-    xaxis=dict(tickmode='linear'),
-    yaxis=dict(showgrid=True, gridcolor='lightgrey', gridwidth=1),
-    legend_title='Temperature Type',
-    legend_title_font_size=13,
-    legend_font_size=11,
-    template='simple_white',
-    width=800,  # Adjust width
-    height=500  # Adjust height
-)
-
-
-# Ensure that the time column is in datetime format
-co2_data['Year'] = pd.to_datetime(co2_data['Year'], format='%Y')
-
-# Plot a time series using Plotly
-fig = px.line(co2_data, x='Year', y='CO2 emission', title='CO2 Emissions Over Time')
+    with col4:
+        st.markdown(f"""
+            <div class="metric-card">
+                <div class="icon">🏥</div>
+                <div class="label">Total Health Facilities</div>
+                <div class="value">{metrics["Total Health Facilities"]}</div>
+            </div>
+        """, unsafe_allow_html=True)
 
 
-# Create two columns
-col1, col2 = st.columns(2)
 
-# Display the first plot in the first column
-with col1:
-    st.plotly_chart(fig)
+    # Convert 'Date' column to datetime format
+    rainfall_data['Date'] = pd.to_datetime(rainfall_data['Date'])
 
-# Display the second plot in the second column
-with col2:
-    st.plotly_chart(temp_fig)
+    # Create Plotly figure for rainfall data
+    line_fig = px.line(rainfall_data, x='Date', y='Rainfall', color='Region',
+                       title='Rainfall Volume Over Time by Region',
+                       labels={'Rainfall': 'Rainfall (mm)', 'Date': 'Date'},
+                       category_orders={"Region": sorted(rainfall_data['Region'].unique())})
+
+    # Calculate average rainfall
+    average_rainfall = rainfall_data.groupby('Date')['Rainfall'].mean().reset_index()
+    line_fig.add_scatter(x=average_rainfall['Date'], y=average_rainfall['Rainfall'],
+                         mode='lines', name='Average Rainfall', line=dict(color='black', dash='dash'))
+
+    # Update layout with dropdown filter
+    line_fig.update_layout(
+        updatemenus=[
+            {
+                "buttons": [
+                    {
+                        "label": "All Regions",
+                        "method": "update",
+                        "args": [{"visible": [True] * (len(rainfall_data['Region'].unique()) + 1)}],
+                    },
+                ] + [
+                    {
+                        "label": region,
+                        "method": "update",
+                        "args": [{"visible": [r == region for r in rainfall_data['Region'].unique()] + [True]}],
+                    }
+                    for region in sorted(rainfall_data['Region'].unique())
+                ],
+                "direction": "down",
+                "showactive": True,
+            }
+        ]
+    )
+
+    st.plotly_chart(line_fig)
+
+    # Prepare temperature data
+    temperature_data['Year'] = pd.to_datetime(temperature_data['Year']).dt.year
+    annual_avg_temperature = temperature_data.groupby('Year').agg({
+        'Tn': 'mean',
+        'Tx': 'mean'
+    }).reset_index()
+
+    # Create Plotly figure for temperature data
+    temp_fig = go.Figure()
+    temp_fig.add_trace(go.Scatter(x=annual_avg_temperature['Year'], y=annual_avg_temperature['Tn'],
+                                 mode='lines+markers',
+                                 name='Average Min Temperature (Tn)',
+                                 line=dict(color='royalblue', width=2),
+                                 marker=dict(size=6)))
+    temp_fig.add_trace(go.Scatter(x=annual_avg_temperature['Year'], y=annual_avg_temperature['Tx'],
+                                 mode='lines+markers',
+                                 name='Average Max Temperature (Tx)',
+                                 line=dict(color='tomato', width=2, dash='dash'),
+                                 marker=dict(size=6)))
+
+    # Update layout for temperature figure
+    temp_fig.update_layout(
+        title='Average Temperature Over Time',
+        title_font_size=14,
+        title_font_color='black',
+        xaxis_title='Year',
+        yaxis_title='Temperature (°C)',
+        xaxis=dict(tickmode='linear'),
+        yaxis=dict(showgrid=True, gridcolor='lightgrey', gridwidth=1),
+        legend_title='Temperature Type',
+        legend_title_font_size=13,
+        legend_font_size=11,
+        template='simple_white',
+        width=800,  # Adjust width
+        height=500  # Adjust height
+    )
+
+    # Create Plotly figure for CO2 data
+    co2_data['Year'] = pd.to_datetime(co2_data['Year'], format='%Y')
+    co2_fig = px.line(co2_data, x='Year', y='CO2 emission', title='CO2 Emissions Over Time')
+
+    # Create columns for visualizations
+    col1, col2 = st.columns([1, 2])  # 40% and 60% width ratio
+
+    # Display the first plot in the first column
+    with col1:
+        st.plotly_chart(co2_fig)
+
+    # Display the second plot in the second column
+    with col2:
+        st.plotly_chart(temp_fig)
+
+# Tab 2: Visualizations
+with tab2:
+    st.header("Occupational Health Overview and Climate Impact")
+
+    # 1. Occupational Health Overview by Region
+    st.subheader("Occupational Health Metrics by Region")
+
+    # Filter data by selected region
+    region_data = occu_health_data[occu_health_data['Region'] == selected_region]
+
+    # Bar chart for work-related ill-health reports
+    fig_ill_health = px.bar(region_data, x='District', y='Number of work-related ill-health reports',
+                            title="Work-related Ill-health Reports by District",
+                            labels={'Number of work-related ill-health reports': 'Ill-health Reports'},
+                            color='Facility_ownership')
+    st.plotly_chart(fig_ill_health)
+
+    # Stacked bar chart for injured persons (Male and Female)
+    fig_injured = go.Figure(data=[
+        go.Bar(name='Female', x=region_data['District'], y=region_data['Number of injured persons (Female)']),
+        go.Bar(name='Male', x=region_data['District'], y=region_data['Number of injured persons (Male)'])
+    ])
+    fig_injured.update_layout(barmode='stack', title="Injured Persons by District and Gender")
+    st.plotly_chart(fig_injured)
+
+    # 2. Correlation Analysis
+    st.subheader("Correlation Between Occupational Health and Climate Factors")
+
+    # Merge data with climate data on a common period or year
+    # Convert 'Period' to a common format if needed (e.g., year)
+    region_data['Period'] = pd.to_datetime(region_data['Period']).dt.year
+    co2_data['Year'] = pd.to_datetime(co2_data['Year'], format='%Y').dt.year
+    temperature_data['Year'] = pd.to_datetime(temperature_data['Year']).dt.year
+
+    # Filter or aggregate occupational health data to match the climate data by year
+    aggregated_region_data = region_data.groupby('Period').agg({
+        'Number of incidents/accidents reported': 'sum'
+    }).reset_index()
+
+    # Merge the aggregated region data with the CO2 data
+    merged_data_co2 = pd.merge(aggregated_region_data, co2_data, left_on='Period', right_on='Year', how='inner')
+
+    # Merge the aggregated region data with the temperature data
+    merged_data_temp = pd.merge(aggregated_region_data, temperature_data, left_on='Period', right_on='Year', how='inner')
+
+    # Scatter plots for correlation analysis
+    st.write("Scatter plot of incidents/accidents vs. CO2 emissions")
+    fig_corr_co2 = px.scatter(merged_data_co2, x='Number of incidents/accidents reported',
+                            y='CO2 emission',
+                            title="Incidents vs CO2 Emissions",
+                            labels={'Number of incidents/accidents reported': 'Incidents/Accidents',
+                                    'CO2 emission': 'CO2 Emissions (tons)'})
+    st.plotly_chart(fig_corr_co2)
+
+    st.write("Scatter plot of incidents/accidents vs. Average Temperature")
+    fig_corr_temp = px.scatter(merged_data_temp, x='Number of incidents/accidents reported',
+                            y='Tx',
+                            title="Incidents vs Average Temperature",
+                            labels={'Number of incidents/accidents reported': 'Incidents/Accidents',
+                                    'Tx': 'Average Temperature (°C)'})
+    st.plotly_chart(fig_corr_temp)
+
+    # 3. Trend Analysis Over Time
+    st.subheader("Trends in Occupational Health and Climate Data")
+
+    # Line chart for trends in health data over time
+    fig_trend_health = px.line(region_data, x='Period', y='Number of work-related ill-health reports',
+                            title="Trends in Work-related Ill-health Reports Over Time",
+                            labels={'Number of work-related ill-health reports': 'Ill-health Reports'})
+    st.plotly_chart(fig_trend_health)
+
+    # Overlay with climate data trends
+    fig_trend_co2 = px.line(co2_data, x='Year', y='CO2 emission', title="CO2 Emissions Over Time")
+    fig_trend_rainfall = px.line(rainfall_data, x='Date', y='Rainfall', title="Rainfall Over Time")
+    fig_trend_temp = px.line(temperature_data, x='Year', y='Tx', title="Average Temperature Over Time")
+
+    # Display the climate trends
+    st.plotly_chart(fig_trend_co2)
+    st.plotly_chart(fig_trend_rainfall)
+    st.plotly_chart(fig_trend_temp)
