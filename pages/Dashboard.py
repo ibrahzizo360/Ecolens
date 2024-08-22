@@ -222,81 +222,64 @@ with tab1:
 
 # Tab 2: Visualizations
 with tab2:
+
+
     st.header("Occupational Health Overview and Climate Impact")
 
-    # 1. Occupational Health Overview by Region
-    st.subheader("Occupational Health Metrics by Region")
+    col1, col2, col3 = st.columns(3)
 
-    # Filter data by selected region
-    region_data = occu_health_data[occu_health_data['Region'] == selected_region]
+    # Display metrics in styled cards
+    with col1:
+        st.markdown(f"""
+            <div class="metric-card">
+                <div class="icon">🩺</div>
+                <div class="label">Work-related ill-health reports</div>
+                <div class="value">{1799}</div>
+            </div>
+        """, unsafe_allow_html=True)
 
-    # Bar chart for work-related ill-health reports
-    fig_ill_health = px.bar(region_data, x='District', y='Number of work-related ill-health reports',
-                            title="Work-related Ill-health Reports by District",
-                            labels={'Number of work-related ill-health reports': 'Ill-health Reports'},
-                            color='Facility_ownership')
-    st.plotly_chart(fig_ill_health)
+    with col2:
+        st.markdown(f"""
+            <div class="metric-card">
+                <div class="icon">📄</div>
+                <div class="label">Incidents/accidents reported</div>
+                <div class="value">{1283}</div>
+            </div>
+        """, unsafe_allow_html=True)
 
-    # Stacked bar chart for injured persons (Male and Female)
-    fig_injured = go.Figure(data=[
-        go.Bar(name='Female', x=region_data['District'], y=region_data['Number of injured persons (Female)']),
-        go.Bar(name='Male', x=region_data['District'], y=region_data['Number of injured persons (Male)'])
-    ])
-    fig_injured.update_layout(barmode='stack', title="Injured Persons by District and Gender")
-    st.plotly_chart(fig_injured)
+    with col3:
+        st.markdown(f"""
+            <div class="metric-card">
+                <div class="icon">👩‍⚕️</div>
+                <div class="label">Sickness Absence by Workforce</div>
+                <div class="value">{12743}</div>
+            </div>
+        """, unsafe_allow_html=True)
 
-    # 2. Correlation Analysis
-    st.subheader("Correlation Between Occupational Health and Climate Factors")
 
-    # Merge data with climate data on a common period or year
-    # Convert 'Period' to a common format if needed (e.g., year)
-    region_data['Period'] = pd.to_datetime(region_data['Period']).dt.year
-    co2_data['Year'] = pd.to_datetime(co2_data['Year'], format='%Y').dt.year
-    temperature_data['Year'] = pd.to_datetime(temperature_data['Year']).dt.year
 
-    # Filter or aggregate occupational health data to match the climate data by year
-    aggregated_region_data = region_data.groupby('Period').agg({
-        'Number of incidents/accidents reported': 'sum'
-    }).reset_index()
+    data = {
+        'Date': pd.date_range(start='2022-01-01', periods=12, freq='M'),
+        'PM2.5': [12, 15, 18, 22, 25, 30, 40, 35, 30, 25, 20, 15],  # Air quality data
+        'Incidents': [50, 60, 55, 70, 65, 80, 75, 70, 60, 50, 40, 35]  # Occupational health data
+    }
 
-    # Merge the aggregated region data with the CO2 data
-    merged_data_co2 = pd.merge(aggregated_region_data, co2_data, left_on='Period', right_on='Year', how='inner')
+    # Create a DataFrame
+    df = pd.DataFrame(data)
 
-    # Merge the aggregated region data with the temperature data
-    merged_data_temp = pd.merge(aggregated_region_data, temperature_data, left_on='Period', right_on='Year', how='inner')
+    # Plot a scatter plot to visualize the relationship between PM2.5 and Incidents
+    scatter_fig = px.scatter(df, x='PM2.5', y='Incidents',
+                            title="Relationship Between PM2.5 Levels and Occupational Health Incidents",
+                            labels={'PM2.5': 'PM2.5 Levels (µg/m³)', 'Incidents': 'Reported Incidents'},
+                            trendline="ols")
 
-    # Scatter plots for correlation analysis
-    st.write("Scatter plot of incidents/accidents vs. CO2 emissions")
-    fig_corr_co2 = px.scatter(merged_data_co2, x='Number of incidents/accidents reported',
-                            y='CO2 emission',
-                            title="Incidents vs CO2 Emissions",
-                            labels={'Number of incidents/accidents reported': 'Incidents/Accidents',
-                                    'CO2 emission': 'CO2 Emissions (tons)'})
-    st.plotly_chart(fig_corr_co2)
+    # Display the scatter plot
+    st.plotly_chart(scatter_fig)
 
-    st.write("Scatter plot of incidents/accidents vs. Average Temperature")
-    fig_corr_temp = px.scatter(merged_data_temp, x='Number of incidents/accidents reported',
-                            y='Tx',
-                            title="Incidents vs Average Temperature",
-                            labels={'Number of incidents/accidents reported': 'Incidents/Accidents',
-                                    'Tx': 'Average Temperature (°C)'})
-    st.plotly_chart(fig_corr_temp)
+    # Plot a line chart to visualize trends over time
+    line_fig = px.line(df, x='Date', y=['PM2.5', 'Incidents'],
+                    title="Trends in PM2.5 Levels and Occupational Health Incidents Over Time",
+                    labels={'value': 'Value', 'variable': 'Metrics'})
 
-    # 3. Trend Analysis Over Time
-    st.subheader("Trends in Occupational Health and Climate Data")
-
-    # Line chart for trends in health data over time
-    fig_trend_health = px.line(region_data, x='Period', y='Number of work-related ill-health reports',
-                            title="Trends in Work-related Ill-health Reports Over Time",
-                            labels={'Number of work-related ill-health reports': 'Ill-health Reports'})
-    st.plotly_chart(fig_trend_health)
-
-    # Overlay with climate data trends
-    fig_trend_co2 = px.line(co2_data, x='Year', y='CO2 emission', title="CO2 Emissions Over Time")
-    fig_trend_rainfall = px.line(rainfall_data, x='Date', y='Rainfall', title="Rainfall Over Time")
-    fig_trend_temp = px.line(temperature_data, x='Year', y='Tx', title="Average Temperature Over Time")
-
-    # Display the climate trends
-    st.plotly_chart(fig_trend_co2)
-    st.plotly_chart(fig_trend_rainfall)
-    st.plotly_chart(fig_trend_temp)
+    # Display the line chart
+    st.plotly_chart(line_fig)
